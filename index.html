@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ESIGN NEW - ESIGN</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+
+  :root {
+    --cyan: #00f2ff;
+    --gold: #ffd700;
+    --purple: #a855f7;
+    --bg: #05050a;
+    --panel: rgba(12, 12, 20, 0.85);
+    --border: rgba(0, 242, 255, 0.15);
+    --text: #e8f0fe;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Tajawal', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== BACKGROUND ===== */
+  #bgCanvas {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ===== TOAST ===== */
+  #toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120px);
+    z-index: 9999;
+    background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(10,10,25,0.98));
+    border: 1px solid var(--gold);
+    border-radius: 20px;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 0 40px rgba(255,215,0,0.3), 0 0 80px rgba(0,242,255,0.15);
+    backdrop-filter: blur(20px);
+    transition: transform 0.6s cubic-bezier(0.34,1.56,0.64,1), opacity 0.5s ease;
+    opacity: 0;
+    min-width: 280px;
+    max-width: 90vw;
+  }
+  #toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  #toast.hide {
+    transform: translateX(-50%) translateY(-120px);
+    opacity: 0;
+    transition: transform 0.5s ease, opacity 0.5s ease;
+  }
+  .toast-icon {
+    font-size: 28px;
+    animation: spinPulse 2s infinite;
+  }
+  @keyframes spinPulse {
+    0%,100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.2) rotate(10deg); }
+  }
+  .toast-text { text-align: right; }
+  .toast-title {
+    font-size: 15px;
+    font-weight: 900;
+    background: linear-gradient(90deg, var(--gold), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .toast-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 2px;
+  }
+  .toast-badge {
+    background: linear-gradient(135deg, #ff6b00, #ffd700);
+    color: #000;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    animation: pulseBadge 1s infinite;
+  }
+  @keyframes pulseBadge {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.5); }
+    50% { box-shadow: 0 0 0 6px rgba(255,215,0,0); }
+  }
+
+  /* ===== SIDE DECORATION ===== */
+  .side-line {
+    position: fixed; right: 18px; top: 15%; height: 60%;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--cyan), transparent);
+    z-index: 10;
+  }
+  .side-avatar {
+    position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 2px solid var(--cyan);
+    box-shadow: 0 0 20px var(--cyan);
+    background: #000; overflow: hidden;
+  }
+  .side-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ===== LAYOUT ===== */
+  .shell {
+    position: relative; z-index: 1;
+    max-width: 580px; margin: 0 auto;
+    padding: 24px 14px 40px;
+  }
+
+  .glass {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    border-radius: 28px;
+    padding: 24px;
+    margin-bottom: 18px;
+    border: 1px solid rgba(0, 242, 255, 0.25);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,242,255,0.12), transparent 70%);
+    pointer-events: none;
+    animation: breathe 4s ease-in-out infinite;
+  }
+  .hero::after {
+    content: '';
+    position: absolute; bottom: -60px; left: -60px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(168,85,247,0.1), transparent 70%);
+    pointer-events: none;
+    animation: breathe 4s ease-in-out infinite reverse;
+  }
+  @keyframes breathe {
+    0%,100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  .hero-top {
+    display: flex; align-items: center; gap: 18px;
+  }
+  .app-icon {
+    width: 88px; height: 88px; border-radius: 22px;
+    overflow: hidden; flex-shrink: 0;
+    border: 2px solid var(--cyan);
+    box-shadow: 0 0 24px rgba(0,242,255,0.5), 0 0 60px rgba(0,242,255,0.15);
+    position: relative;
+    animation: iconFloat 3s ease-in-out infinite;
+  }
+  @keyframes iconFloat {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  .app-icon img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* EYEBROW – new style */
+  .eyebrow {
+    display: inline-block;
+    font-size: 11px; font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    background: rgba(0,242,255,0.08);
+    border: 1px solid rgba(0,242,255,0.3);
+    padding: 5px 14px;
+    border-radius: 50px;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .eyebrow::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,242,255,0.3), transparent);
+    animation: sheen 2.5s infinite;
+  }
+  @keyframes sheen {
+    to { left: 150%; }
+  }
+
+  .app-name {
+    font-size: 26px; font-weight: 900; color: #fff;
+    text-shadow: 0 0 20px rgba(0,242,255,0.4);
+  }
+  .app-sub {
+    font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 3px;
+  }
+
+  /* NEW BADGE */
+  .new-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: linear-gradient(135deg, #a855f7, #00f2ff);
+    color: #fff;
+    font-size: 11px; font-weight: 900;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 6px;
+    box-shadow: 0 0 15px rgba(168,85,247,0.4);
+    animation: badgePop 2s ease-in-out infinite;
+  }
+  @keyframes badgePop {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+
+  /* ===== DOWNLOAD BUTTON ===== */
+  .btn-wrap { margin-top: 20px; }
+  .download-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 58px;
+    border-radius: 18px; font-weight: 900; font-size: 17px;
+    border: none; cursor: pointer;
+    background: linear-gradient(135deg, #00d4ff 0%, #0050ff 50%, #7c3aed 100%);
+    background-size: 200% 100%;
+    color: #fff;
+    position: relative; overflow: hidden;
+    box-shadow: 0 4px 30px rgba(0,212,255,0.4);
+    transition: box-shadow 0.3s;
+    animation: btnShift 4s linear infinite;
+  }
+  @keyframes btnShift {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  .download-btn:active { transform: scale(0.97); }
+  .progress-fill {
+    position: absolute; left: 0; top: 0;
+    height: 100%; width: 0%;
+    background: rgba(255,255,255,0.18);
+    transition: width 0.05s linear;
+  }
+  .btn-content { position: relative; z-index: 1; display: flex; align-items: center; gap: 8px; }
+  .success-icon { display: none; }
+
+  /* ===== STATS ROW ===== */
+  .stats-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px; margin-top: 16px;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(0,242,255,0.1);
+    border-radius: 16px; padding: 12px 8px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 20px; font-weight: 900;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+  /* ===== TUTORIAL LINK ===== */
+  .tutorial-link {
+    margin-top: 16px; padding: 18px;
+    border-radius: 20px;
+    border: 1px dashed rgba(0,242,255,0.4);
+    display: flex; align-items: center; gap: 14px;
+    text-decoration: none;
+    transition: background 0.3s;
+  }
+  .tutorial-link:hover { background: rgba(0,242,255,0.05); }
+  .tutorial-icon {
+    width: 44px; height: 44px; border-radius: 14px;
+    background: rgba(0,242,255,0.1);
+    border: 1px solid rgba(0,242,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .tutorial-text p { font-size: 14px; color: #fff; font-weight: 700; }
+  .tutorial-text span { font-size: 12px; color: var(--cyan); }
+
+  /* ===== FEATURES ===== */
+  .features-panel {
+    border-radius: 28px; padding: 24px; margin-top: 16px;
+  }
+  .section-title {
+    font-size: 18px; font-weight: 900;
+    text-align: center; margin-bottom: 18px;
+    color: var(--cyan);
+    letter-spacing: 1px;
+  }
+  .features-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .feature-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(0,242,255,0.1);
+    border-radius: 16px; padding: 14px;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: border-color 0.3s, transform 0.3s;
+    animation: fadeUp 0.5s ease both;
+  }
+  .feature-card:hover {
+    border-color: rgba(0,242,255,0.35);
+    transform: translateY(-2px);
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .feature-card:nth-child(1) { animation-delay: 0.1s; }
+  .feature-card:nth-child(2) { animation-delay: 0.2s; }
+  .feature-card:nth-child(3) { animation-delay: 0.3s; }
+  .feature-card:nth-child(4) { animation-delay: 0.4s; }
+  .feature-card:nth-child(5) { animation-delay: 0.5s; }
+  .feature-card:nth-child(6) { animation-delay: 0.6s; }
+  .feat-icon { font-size: 22px; }
+  .feat-text { font-size: 13px; color: #d1d5db; line-height: 1.4; }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    text-align: center; margin-top: 20px; padding: 20px;
+    font-size: 14px; color: rgba(255,255,255,0.5);
+    border-radius: 20px;
+  }
+  .footer a { color: var(--cyan); font-weight: 900; text-decoration: none; }
+  .footer-logo {
+    font-size: 22px; font-weight: 900; letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--cyan), var(--purple), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+
+  /* ===== FLOATING PARTICLES ===== */
+  .particle {
+    position: fixed; border-radius: 50%;
+    pointer-events: none; z-index: 0;
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Canvas BG -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- TOAST -->
+<div id="toast">
+  <div class="toast-icon">🚀</div>
+  <div class="toast-text">
+    <div class="toast-title">ايساين جديد — شهادة مجانية جديدة!</div>
+    <div class="toast-sub">متاحة الآن للجميع بدون قيود</div>
+  </div>
+  <div class="toast-badge">جديد 🔥</div>
+</div>
+
+<!-- SIDE LINE -->
+<div class="side-line">
+  <div class="side-avatar">
+    <img src="https://i.ibb.co/TBDypBdD/image.png" alt="Owner">
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="shell">
+
+  <!-- HERO -->
+  <section class="hero glass">
+    <div class="hero-top">
+      <div class="app-icon">
+        <img src="https://i.ibb.co/kgZXfH7Z/icon-3x.png" alt="ESIGN">
+      </div>
+      <div>
+        <div class="eyebrow">ESIGN NEW</div>
+        <h1 class="app-name">ايساين ESIGN</h1>
+        <div class="app-sub">توقيع التطبيقات بدون كمبيوتر</div>
+        <div class="new-badge">✦ شهادة مجانية جديدة ✦</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">100%</div>
+        <div class="stat-label">مجاني</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">iOS</div>
+        <div class="stat-label">متوافق</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">Pro</div>
+        <div class="stat-label">إصدار</div>
+      </div>
+    </div>
+
+    <div class="btn-wrap">
+      <button class="download-btn" onclick="startDownload(this, 'itms-services://?action=download-manifest&url=https://github.com/dfreeeei/Es/releases/download/Y/manifest.plist')">
+        <div class="progress-fill"></div>
+        <div class="btn-content">
+          <span class="btnText">⬇ تثبيت الآن</span>
+          <span class="success-icon">✅</span>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- TUTORIAL -->
+  <a href="https://t.me/atraheeb7/55" class="tutorial-link glass">
+    <div class="tutorial-icon">🛡</div>
+    <div class="tutorial-text">
+      <p>حل مشكلة مطور مؤسسة غير موثوق</p>
+      <span>اضغط هنا لمشاهدة الشرح ←</span>
+    </div>
+  </a>
+
+  <!-- FEATURES -->
+  <section class="features-panel glass">
+    <h2 class="section-title">✦ مميزات ايساين ✦</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feat-icon">✍️</div>
+        <div class="feat-text">توقيع التطبيقات بصيغة IPA</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">📱</div>
+        <div class="feat-text">تثبيت بدون كمبيوتر</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🎓</div>
+        <div class="feat-text">دعم جميع شهادات المطورين</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">⚙️</div>
+        <div class="feat-text">تعديل ملفات التطبيق بسهولة</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🔧</div>
+        <div class="feat-text">إضافة أدوات وتعديلات للتطبيقات</div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-text">سرعة في التنفيذ وواجهة احترافية</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <div class="footer glass">
+    <div class="footer-logo">ESIGN</div>
+    <div>تم التطوير والبرمجة بواسطة <a href="https://t.me/atraheebb">اترهيب</a></div>
+  </div>
+
+</main>
+
+<audio id="successSound" src="https://ashtemobile.tututweak.com/sound.mp3" preload="none" playsinline></audio>
+
+<script>
+// ===== TOAST =====
+window.addEventListener('load', () => {
+  const toast = document.getElementById('toast');
+  setTimeout(() => { toast.classList.add('show'); }, 400);
+  setTimeout(() => { toast.classList.remove('show'); toast.classList.add('hide'); }, 3400);
+});
+
+// ===== CANVAS STARS + GRID =====
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let stars = [], W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  stars = Array.from({ length: 130 }, () => ({
+    x: Math.random() * W, y: Math.random() * H,
+    r: Math.random() * 1.8, op: Math.random(), spd: 0.01 + Math.random() * 0.015
+  }));
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // grid
+  ctx.strokeStyle = 'rgba(0,242,255,0.04)';
+  ctx.lineWidth = 1;
+  const gs = 60;
+  for (let x = 0; x < W; x += gs) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += gs) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+  // stars
+  stars.forEach(s => {
+    ctx.fillStyle = `rgba(255,255,255,${s.op})`;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+    s.op += s.spd;
+    if (s.op > 1 || s.op < 0) s.spd *= -1;
+  });
+
+  requestAnimationFrame(draw);
+}
+
+window.addEventListener('resize', resize);
+resize(); draw();
+
+// ===== FLOATING PARTICLES =====
+function spawnParticle() {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = 2 + Math.random() * 4;
+  const colors = ['rgba(0,242,255,0.5)', 'rgba(168,85,247,0.5)', 'rgba(255,215,0,0.4)'];
+  const color = colors[Math.floor(Math.random() * colors.length)];
+  Object.assign(p.style, {
+    width: size + 'px', height: size + 'px',
+    background: color,
+    left: Math.random() * 100 + 'vw',
+    animationDuration: (6 + Math.random() * 8) + 's',
+    animationDelay: Math.random() * 5 + 's',
+    boxShadow: `0 0 ${size*2}px ${color}`
+  });
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 14000);
+}
+setInterval(spawnParticle, 800);
+
+// ===== DOWNLOAD =====
+function startDownload(btn, link) {
+  if (btn.classList.contains('disabled')) return;
+  btn.classList.add('disabled');
+  const fill = btn.querySelector('.progress-fill');
+  const btnText = btn.querySelector('.btnText');
+  const successIcon = btn.querySelector('.success-icon');
+  const sound = document.getElementById('successSound');
+  let pct = 0;
+
+  const iv = setInterval(() => {
+    pct += 1;
+    fill.style.width = pct + '%';
+    btnText.innerText = `جاري التثبيت... ${pct}%`;
+    if (pct >= 100) {
+      clearInterval(iv);
+      btnText.innerText = 'اكتمل بنجاح 🎉';
+      successIcon.style.display = 'inline-block';
+      sound.play().catch(() => {});
+      setTimeout(() => {
+        window.location.href = link;
+        setTimeout(() => { window.location.href = 'https://t.me/atraheebb'; }, 2000);
+      }, 1000);
+    }
+  }, 45);
+}
+</script>
+</body>
+</html>
